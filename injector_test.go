@@ -2,7 +2,7 @@ package di_test
 
 import (
 	"fmt"
-	"github.com/nodejayes/webtools/di"
+	di "github.com/nodejayes/generic-di"
 	"testing"
 )
 
