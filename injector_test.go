@@ -2,8 +2,10 @@ package di_test
 
 import (
 	"fmt"
-	di "github.com/nodejayes/generic-di"
 	"testing"
+
+	"github.com/google/uuid"
+	di "github.com/nodejayes/generic-di"
 )
 
 func init() {
@@ -20,6 +22,7 @@ type (
 
 	textService struct {
 		config *configuration
+		id     string
 	}
 )
 
@@ -30,6 +33,7 @@ func newConfiguration() *configuration {
 func newTextService() *textService {
 	return &textService{
 		config: di.Inject[configuration](),
+		id:     uuid.NewString(),
 	}
 }
 
@@ -47,10 +51,42 @@ func (ctx *textService) Greeting() string {
 	return fmt.Sprintf("Hello %s", ctx.config.GetUserName())
 }
 
+func (ctx *textService) GetID() string {
+	return ctx.id
+}
+
+func (ctx *messageService) GetTextServiceID() string {
+	return ctx.texts.GetID()
+}
+
 func TestInject(t *testing.T) {
 	msg := newMessageService()
 	println(msg.texts.Greeting())
 	if msg.texts.Greeting() != "Hello Markus" {
 		t.Errorf("expect greeting Hello Markus")
+	}
+}
+
+func TestInject_Duplicate(t *testing.T) {
+	msg1 := newMessageService()
+	msg2 := newMessageService()
+	println(msg1.texts.Greeting())
+	println(msg2.texts.Greeting())
+	if msg1.texts.Greeting() != "Hello Markus" {
+		t.Errorf("expect greeting Hello Markus")
+	}
+	if msg2.texts.Greeting() != "Hello Markus" {
+		t.Errorf("expect greeting Hello Markus")
+	}
+	if msg1.GetTextServiceID() != msg2.GetTextServiceID() {
+		t.Errorf("expect same instance of textService")
+	}
+}
+
+func TestInject_Parallel(t *testing.T) {
+	for i := 0; i < 20; i++ {
+		go func() {
+			println(di.Inject[textService]().GetID())
+		}()
 	}
 }

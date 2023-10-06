@@ -5,14 +5,15 @@ import (
 	"sync"
 )
 
-var instanceMutex = sync.RWMutex{}
+var creatorMutex = sync.Mutex{}
+var instanceMutex = sync.Mutex{}
 var creators = make(map[string]func() any)
 var instances = make(map[string]any)
 
 // Injectable marks a constructor Function of a Struct for DI
 func Injectable[T any](creator func() *T) {
-	instanceMutex.Lock()
-	defer instanceMutex.Unlock()
+	creatorMutex.Lock()
+	defer creatorMutex.Unlock()
 	creators[getSelector[T]()] = func() any {
 		return creator()
 	}
@@ -20,21 +21,25 @@ func Injectable[T any](creator func() *T) {
 
 // Inject gets or create a Instance of the Struct used the Injectable constructor Function
 func Inject[T any]() *T {
-	instanceMutex.RLock()
-	defer instanceMutex.RUnlock()
 	selector := getSelector[T]()
-	instance, instanceExists := instances[selector].(*T)
+	_, instanceExists := instances[selector].(*T)
 	if !instanceExists {
 		creator, creatorExists := creators[selector]
 		if !creatorExists {
 			return nil
 		}
-		instance, instanceExists = creator().(*T)
+		createdInstance, instanceCreated := creator().(*T)
+		if instanceCreated {
+			instanceMutex.Lock()
+			defer instanceMutex.Unlock()
+			instance, instanceExists := instances[selector].(*T)
+			if instanceExists {
+				return instance
+			}
+			instances[selector] = createdInstance
+		}
 	}
-	if !instanceExists {
-		return nil
-	}
-	return instance
+	return instances[selector].(*T)
 }
 
 func getSelector[T any]() string {
