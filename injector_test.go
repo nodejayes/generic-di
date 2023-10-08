@@ -90,3 +90,11 @@ func TestInject_Parallel(t *testing.T) {
 		}()
 	}
 }
+
+func TestInject_MultipleInstances(t *testing.T) {
+	textServiceA := di.Inject[textService]("a")
+	textServiceB := di.Inject[textService]("b")
+	if textServiceA.GetID() == textServiceB.GetID() {
+		t.Errorf("expect a seperate instance textServiceA and textServiceB but there was identical")
+	}
+}

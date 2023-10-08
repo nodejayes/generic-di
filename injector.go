@@ -1,7 +1,9 @@
 package di
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -20,9 +22,10 @@ func Injectable[T any](creator func() *T) {
 }
 
 // Inject gets or create a Instance of the Struct used the Injectable constructor Function
-func Inject[T any]() *T {
+func Inject[T any](identifier ...string) *T {
 	selector := getSelector[T]()
-	_, instanceExists := instances[selector].(*T)
+	instanceSelector := getSelector[T](identifier...)
+	_, instanceExists := instances[instanceSelector].(*T)
 	if !instanceExists {
 		creator, creatorExists := creators[selector]
 		if !creatorExists {
@@ -32,17 +35,19 @@ func Inject[T any]() *T {
 		if instanceCreated {
 			instanceMutex.Lock()
 			defer instanceMutex.Unlock()
-			instance, instanceExists := instances[selector].(*T)
+			instance, instanceExists := instances[instanceSelector].(*T)
 			if instanceExists {
 				return instance
 			}
-			instances[selector] = createdInstance
+			instances[instanceSelector] = createdInstance
 		}
 	}
-	return instances[selector].(*T)
+	return instances[instanceSelector].(*T)
 }
 
-func getSelector[T any]() string {
+func getSelector[T any](identifier ...string) string {
 	var def T
-	return reflect.TypeOf(def).String()
+	typeName := reflect.TypeOf(def).String()
+	additionalKey := strings.Join(identifier, "_")
+	return fmt.Sprintf("%s_%s", typeName, additionalKey)
 }
