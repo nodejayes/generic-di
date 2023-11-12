@@ -45,6 +45,13 @@ func Inject[T any](identifier ...string) *T {
 	return instances[instanceSelector].(*T)
 }
 
+func Destroy[T any](identifier ...string) {
+	instanceMutex.Lock()
+	defer instanceMutex.Unlock()
+	instanceSelector := getSelector[T](identifier...)
+	delete(instances, instanceSelector)
+}
+
 func getSelector[T any](identifier ...string) string {
 	var def T
 	typeName := reflect.TypeOf(def).String()

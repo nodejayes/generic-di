@@ -98,3 +98,8 @@ func TestInject_MultipleInstances(t *testing.T) {
 		t.Errorf("expect a seperate instance textServiceA and textServiceB but there was identical")
 	}
 }
+
+func TestDestroy(t *testing.T) {
+	_ = di.Inject[textService]("a")
+	di.Destroy[textService]("a")
+}
